@@ -9,13 +9,15 @@ namespace Microsoft.AspNet.Mvc.Rendering
     public class HtmlString
     {
         private static readonly HtmlString _empty = new HtmlString(string.Empty);
+        private StringCollectionTextWriter _writer;
 
-        private readonly StringCollectionTextWriter _writer;
-        private readonly string _input;
-
+        /// <summary>
+        /// Initializes a new instance of <see cref="HtmlString"/> with the <paramref name="input"/> string.
+        /// </summary>
+        /// <param name="input">Contents of the <see cref="HtmlString"/></param>
         public HtmlString(string input)
         {
-            _input = input;
+            Writer.Write(input);
         }
 
         /// <summary>
@@ -27,6 +29,29 @@ namespace Microsoft.AspNet.Mvc.Rendering
             _writer = writer;
         }
 
+        /// <summary>
+        /// <see cref="StringCollectionTextWriter"/> containing the contents of <see cref="HtmlString"/>.
+        /// </summary>
+        public StringCollectionTextWriter Writer
+        {
+            get
+            {
+                if (_writer == null)
+                {
+                    _writer = new StringCollectionTextWriter();
+                }
+
+                return _writer;
+            }
+            set
+            {
+                _writer = value;
+            }
+        }
+
+        /// <summary>
+        /// Empty <see cref="HtmlString"/>.
+        /// </summary>
         public static HtmlString Empty
         {
             get
@@ -47,19 +72,14 @@ namespace Microsoft.AspNet.Mvc.Rendering
             }
             else
             {
-                targetWriter.Write(_input);
+                targetWriter.Write(Writer.ToString());
             }
         }
 
         /// <inheritdoc />
         public override string ToString()
         {
-            if (_writer != null)
-            {
-                return _writer.ToString();
-            }
-
-            return _input;
+            return Writer.ToString();
         }
     }
 }

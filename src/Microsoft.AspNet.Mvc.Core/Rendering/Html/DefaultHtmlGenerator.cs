@@ -442,7 +442,7 @@ namespace Microsoft.AspNet.Mvc.Rendering
 
             var tagBuilder = new TagBuilder("select", _htmlEncoder)
             {
-                InnerHtml = listItemBuilder.ToString()
+                InnerHtml = listItemBuilder
             };
             tagBuilder.MergeAttributes(GetHtmlAttributeDictionaryOrNull(htmlAttributes));
             tagBuilder.MergeAttribute("name", fullName, true /* replaceExisting */);
@@ -531,7 +531,7 @@ namespace Microsoft.AspNet.Mvc.Rendering
 
             // The first newline is always trimmed when a TextArea is rendered, so we add an extra one
             // in case the value being rendered is something like "\r\nHello".
-            tagBuilder.InnerHtml = Environment.NewLine + _htmlEncoder.HtmlEncode(value);
+            tagBuilder.InnerHtml = new HtmlString(Environment.NewLine + _htmlEncoder.HtmlEncode(value));
 
             return tagBuilder;
         }
@@ -647,7 +647,7 @@ namespace Microsoft.AspNet.Mvc.Rendering
                 return null;
             }
 
-            string wrappedMessage;
+            var wrappedMessage = new HtmlString(string.Empty);
             if (!string.IsNullOrEmpty(message))
             {
                 if (string.IsNullOrEmpty(headerTag))
@@ -656,16 +656,13 @@ namespace Microsoft.AspNet.Mvc.Rendering
                 }
                 var messageTag = new TagBuilder(headerTag, _htmlEncoder);
                 messageTag.SetInnerText(message);
-                wrappedMessage = messageTag.ToString(TagRenderMode.Normal) + Environment.NewLine;
-            }
-            else
-            {
-                wrappedMessage = null;
+                wrappedMessage = messageTag.ToHtmlString(TagRenderMode.Normal);
+                wrappedMessage.Writer.WriteLine();
             }
 
             // If excludePropertyErrors is true, describe any validation issue with the current model in a single item.
             // Otherwise, list individual property errors.
-            var htmlSummary = new StringBuilder();
+            var htmlSummary = new StringCollectionTextWriter();
             var modelStates = ValidationHelpers.GetModelStateList(viewContext.ViewData, excludePropertyErrors);
 
             foreach (var modelState in modelStates)
@@ -678,19 +675,21 @@ namespace Microsoft.AspNet.Mvc.Rendering
                     {
                         var listItem = new TagBuilder("li", _htmlEncoder);
                         listItem.SetInnerText(errorText);
-                        htmlSummary.AppendLine(listItem.ToString(TagRenderMode.Normal));
+                        listItem.ToHtmlString(TagRenderMode.Normal).WriteTo(htmlSummary);
+                        htmlSummary.WriteLine();
                     }
                 }
             }
 
-            if (htmlSummary.Length == 0)
+            // To be changed
+            if (htmlSummary.ToString().Length == 0)
             {
-                htmlSummary.AppendLine(HiddenListItem);
+                htmlSummary.WriteLine(HiddenListItem);
             }
 
             var unorderedList = new TagBuilder("ul", _htmlEncoder)
             {
-                InnerHtml = htmlSummary.ToString()
+                InnerHtml = new HtmlString(htmlSummary)
             };
 
             var tagBuilder = new TagBuilder("div", _htmlEncoder);
@@ -705,7 +704,8 @@ namespace Microsoft.AspNet.Mvc.Rendering
                 tagBuilder.AddCssClass(HtmlHelper.ValidationSummaryCssClassName);
             }
 
-            tagBuilder.InnerHtml = wrappedMessage + unorderedList.ToString(TagRenderMode.Normal);
+            wrappedMessage.WriteTo(tagBuilder.InnerHtml.Writer);
+            unorderedList.ToHtmlString(TagRenderMode.Normal).WriteTo(tagBuilder.InnerHtml.Writer);
 
             if (formContext != null && !excludePropertyErrors)
             {
@@ -867,7 +867,7 @@ namespace Microsoft.AspNet.Mvc.Rendering
         {
             var tagBuilder = new TagBuilder("option", htmlEncoder)
             {
-                InnerHtml = encodedText,
+                InnerHtml = new HtmlString(encodedText),
             };
 
             if (item.Value != null)
@@ -1052,7 +1052,7 @@ namespace Microsoft.AspNet.Mvc.Rendering
         {
             var tagBuilder = new TagBuilder("a", _htmlEncoder)
             {
-                InnerHtml = _htmlEncoder.HtmlEncode(linkText),
+                InnerHtml = new HtmlString(_htmlEncoder.HtmlEncode(linkText)),
             };
 
             tagBuilder.MergeAttributes(GetHtmlAttributeDictionaryOrNull(htmlAttributes));
@@ -1208,14 +1208,14 @@ namespace Microsoft.AspNet.Mvc.Rendering
             return newSelectList;
         }
 
-        private StringBuilder GenerateGroupsAndOptions(string optionLabel, IEnumerable<SelectListItem> selectList)
+        private HtmlString GenerateGroupsAndOptions(string optionLabel, IEnumerable<SelectListItem> selectList)
         {
-            var listItemBuilder = new StringBuilder();
+            var listItemBuilder = new StringCollectionTextWriter();
 
             // Make optionLabel the first item that gets rendered.
             if (optionLabel != null)
             {
-                listItemBuilder.AppendLine(GenerateOption(new SelectListItem()
+                listItemBuilder.WriteLine(GenerateOption(new SelectListItem()
                 {
                     Text = optionLabel,
                     Value = string.Empty,
@@ -1247,29 +1247,32 @@ namespace Microsoft.AspNet.Mvc.Rendering
                         groupBuilder.MergeAttribute("disabled", "disabled");
                     }
 
-                    listItemBuilder.AppendLine(groupBuilder.ToString(TagRenderMode.StartTag));
+                    groupBuilder.ToHtmlString(TagRenderMode.StartTag).WriteTo(listItemBuilder);
+                    listItemBuilder.WriteLine();
                 }
 
                 foreach (var item in group)
                 {
-                    listItemBuilder.AppendLine(GenerateOption(item));
+                    GenerateOption(item).WriteTo(listItemBuilder);
+                    listItemBuilder.WriteLine();
                 }
 
                 if (optGroup != null)
                 {
-                    listItemBuilder.AppendLine(groupBuilder.ToString(TagRenderMode.EndTag));
+                    groupBuilder.ToHtmlString(TagRenderMode.EndTag).WriteTo(listItemBuilder);
+                    listItemBuilder.WriteLine();
                 }
             }
 
-            return listItemBuilder;
+            return new HtmlString(listItemBuilder);
         }
 
-        private string GenerateOption(SelectListItem item)
+        private HtmlString GenerateOption(SelectListItem item)
         {
             var encodedText = Encode(item.Text);
             var tagBuilder = GenerateOption(item, encodedText, _htmlEncoder);
 
-            return tagBuilder.ToString(TagRenderMode.Normal);
+            return tagBuilder.ToHtmlString(TagRenderMode.Normal);
         }
     }
 }

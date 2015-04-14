@@ -462,9 +462,7 @@ namespace Microsoft.AspNet.Mvc.Rendering
                                                       readOnly: true,
                                                       additionalViewData: additionalViewData);
 
-            var templateResult = templateBuilder.Build();
-
-            return new HtmlString(templateResult);
+            return templateBuilder.Build();
         }
 
         protected virtual async Task RenderPartialCoreAsync([NotNull] string partialViewName,
@@ -656,7 +654,9 @@ namespace Microsoft.AspNet.Mvc.Rendering
                 return HtmlString.Empty;
             }
 
-            var elements = checkbox.ToString(TagRenderMode.SelfClosing) + hidden.ToString(TagRenderMode.SelfClosing);
+            var elements = new StringCollectionTextWriter();
+            checkbox.ToHtmlString(TagRenderMode.SelfClosing).WriteTo(elements);
+            hidden.ToHtmlString(TagRenderMode.SelfClosing).WriteTo(elements);
 
             return new HtmlString(elements);
         }
@@ -720,9 +720,7 @@ namespace Microsoft.AspNet.Mvc.Rendering
                 readOnly: false,
                 additionalViewData: additionalViewData);
 
-            var templateResult = templateBuilder.Build();
-
-            return new HtmlString(templateResult);
+            return templateBuilder.Build();
         }
 
         /// <summary>
@@ -764,7 +762,7 @@ namespace Microsoft.AspNet.Mvc.Rendering
                 htmlAttributes);
             if (tagBuilder != null)
             {
-                ViewContext.Writer.Write(tagBuilder.ToString(TagRenderMode.StartTag));
+                tagBuilder.ToHtmlString(TagRenderMode.StartTag).WriteTo(ViewContext.Writer);
             }
 
             return CreateForm();
@@ -806,7 +804,7 @@ namespace Microsoft.AspNet.Mvc.Rendering
                 htmlAttributes);
             if (tagBuilder != null)
             {
-                ViewContext.Writer.Write(tagBuilder.ToString(TagRenderMode.StartTag));
+                tagBuilder.ToHtmlString(TagRenderMode.StartTag).WriteTo(ViewContext.Writer);
             }
 
             return CreateForm();

@@ -37,10 +37,10 @@ namespace Microsoft.AspNet.Mvc.ViewComponents
         {
             var descriptor = SelectComponent(name);
 
-            using (var writer = new StringWriter())
+            using (var writer = new StringCollectionTextWriter())
             {
                 InvokeCore(writer, descriptor, arguments);
-                return new HtmlString(writer.ToString());
+                return new HtmlString(writer);
             }
         }
 
@@ -48,10 +48,10 @@ namespace Microsoft.AspNet.Mvc.ViewComponents
         {
             var descriptor = SelectComponent(componentType);
 
-            using (var writer = new StringWriter())
+            using (var writer = new StringCollectionTextWriter())
             {
                 InvokeCore(writer, descriptor, arguments);
-                return new HtmlString(writer.ToString());
+                return new HtmlString(writer);
             }
         }
 
@@ -71,10 +71,10 @@ namespace Microsoft.AspNet.Mvc.ViewComponents
         {
             var descriptor = SelectComponent(name);
 
-            using (var writer = new StringWriter())
+            using (var writer = new StringCollectionTextWriter())
             {
                 await InvokeCoreAsync(writer, descriptor, arguments);
-                return new HtmlString(writer.ToString());
+                return new HtmlString(writer);
             }
         }
 
@@ -82,10 +82,10 @@ namespace Microsoft.AspNet.Mvc.ViewComponents
         {
             var descriptor = SelectComponent(componentType);
 
-            using (var writer = new StringWriter())
+            using (var writer = new StringCollectionTextWriter())
             {
                 await InvokeCoreAsync(writer, descriptor, arguments);
-                return new HtmlString(writer.ToString());
+                return new HtmlString(writer);
             }
         }
 

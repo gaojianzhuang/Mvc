@@ -14,7 +14,7 @@ namespace Microsoft.AspNet.Mvc.Rendering
 {
     public class TagBuilder
     {
-        private string _innerHtml;
+        private HtmlString _innerHtml;
         private readonly IHtmlEncoder _htmlEncoder;
 
         public TagBuilder(string tagName)
@@ -32,13 +32,14 @@ namespace Microsoft.AspNet.Mvc.Rendering
             TagName = tagName;
             Attributes = new SortedDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             _htmlEncoder = htmlEncoder;
+            _innerHtml = new HtmlString(new StringCollectionTextWriter());
         }
 
         public IDictionary<string, string> Attributes { get; private set; }
 
-        public string InnerHtml
+        public HtmlString InnerHtml
         {
-            get { return _innerHtml ?? string.Empty; }
+            get { return _innerHtml; }
             set { _innerHtml = value; }
         }
 
@@ -171,22 +172,12 @@ namespace Microsoft.AspNet.Mvc.Rendering
 
         public void SetInnerText(string innerText)
         {
-            InnerHtml = _htmlEncoder.HtmlEncode(innerText);
+            InnerHtml = new HtmlString(_htmlEncoder.HtmlEncode(innerText));
         }
 
         public HtmlString ToHtmlString(TagRenderMode renderMode)
         {
-            return new HtmlString(ToString(renderMode));
-        }
-
-        public override string ToString()
-        {
-            return ToString(TagRenderMode.Normal);
-        }
-
-        public string ToString(TagRenderMode renderMode)
-        {
-            using (var stringWriter = new StringWriter())
+            using (var stringWriter = new StringCollectionTextWriter())
             {
                 switch (renderMode)
                 {
@@ -212,15 +203,25 @@ namespace Microsoft.AspNet.Mvc.Rendering
                         stringWriter.Write(TagName);
                         AppendAttributes(stringWriter);
                         stringWriter.Write('>');
-                        stringWriter.Write(InnerHtml);
+                        InnerHtml.WriteTo(stringWriter);
                         stringWriter.Write("</");
                         stringWriter.Write(TagName);
                         stringWriter.Write('>');
                         break;
                 }
 
-                return stringWriter.ToString();
+                return new HtmlString(stringWriter);
             }
+        }
+
+        public override string ToString()
+        {
+            return ToString(TagRenderMode.Normal);
+        }
+
+        public string ToString(TagRenderMode renderMode)
+        {
+            return ToHtmlString(renderMode).ToString();
         }
 
         private static class Html401IdUtil
