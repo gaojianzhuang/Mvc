@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNet.Mvc.Core;
 using Microsoft.Framework.DependencyInjection;
 using Microsoft.Framework.Internal;
+using Microsoft.Framework.Logging;
 
 namespace Microsoft.AspNet.Mvc.ModelBinding
 {
@@ -30,6 +31,7 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
         {
             var requestServices = bindingContext.OperationBindingContext.HttpContext.RequestServices;
 
+            var logger = requestServices.GetRequiredService<ILogger<BodyModelBinder>>();
             var actionContext = requestServices.GetRequiredService<IScopedInstance<ActionContext>>().Value;
             var formatters = requestServices.GetRequiredService<IScopedInstance<ActionBindingContext>>().Value.InputFormatters;
 
@@ -38,6 +40,15 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
 
             if (formatter == null)
             {
+                var contentType = bindingContext.OperationBindingContext.HttpContext.Request.ContentType;
+
+                logger.LogWarning(
+                    "Could not find an input formatter for reading the request body of content type '{ContentType}'" +
+                    ", model name '{ModelName}' and model type '{ModelType}'.",
+                    contentType,
+                    bindingContext.ModelName,
+                    bindingContext.ModelType.FullName);
+
                 var unsupportedContentType = Resources.FormatUnsupportedContentType(
                     bindingContext.OperationBindingContext.HttpContext.Request.ContentType);
                 bindingContext.ModelState.AddModelError(bindingContext.ModelName, unsupportedContentType);
@@ -56,6 +67,15 @@ namespace Microsoft.AspNet.Mvc.ModelBinding
             }
             catch (Exception ex)
             {
+                logger.LogWarning(
+                    "An error occurred while trying to read the request body by the input formatter" +
+                    " '{InputFormatter}' for content type '{ContentType}', model name '{ModelName}' and" +
+                    " model type '{ModelType}'.",
+                    formatter.GetType().FullName,
+                    bindingContext.OperationBindingContext.HttpContext.Request.ContentType,
+                    bindingContext.ModelName,
+                    bindingContext.ModelType.FullName);
+
                 bindingContext.ModelState.AddModelError(bindingContext.ModelName, ex);
 
                 // This model binder is the only handler for the Body binding source.

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNet.Mvc.ModelBinding;
 using Microsoft.AspNet.Mvc.ModelBinding.Validation;
 using Microsoft.Framework.Internal;
+using Microsoft.Framework.Logging;
 
 namespace Microsoft.AspNet.Mvc.Core
 {
@@ -39,6 +40,7 @@ namespace Microsoft.AspNet.Mvc.Core
 
         private ResultExecutingContext _resultExecutingContext;
         private ResultExecutedContext _resultExecutedContext;
+        private readonly ILogger<FilterActionInvoker> _logger;
 
         public FilterActionInvoker(
             [NotNull] ActionContext actionContext,
@@ -48,7 +50,8 @@ namespace Microsoft.AspNet.Mvc.Core
             [NotNull] IReadOnlyList<IModelBinder> modelBinders,
             [NotNull] IReadOnlyList<IModelValidatorProvider> modelValidatorProviders,
             [NotNull] IReadOnlyList<IValueProviderFactory> valueProviderFactories,
-            [NotNull] IScopedInstance<ActionBindingContext> actionBindingContextAccessor)
+            [NotNull] IScopedInstance<ActionBindingContext> actionBindingContextAccessor,
+            [NotNull] ILogger<FilterActionInvoker> logger)
         {
             ActionContext = actionContext;
 
@@ -59,6 +62,7 @@ namespace Microsoft.AspNet.Mvc.Core
             _modelValidatorProviders = modelValidatorProviders;
             _valueProviderFactories = valueProviderFactories;
             _actionBindingContextAccessor = actionBindingContextAccessor;
+            _logger = logger;
         }
 
         protected ActionContext ActionContext { get; private set; }
@@ -443,6 +447,11 @@ namespace Microsoft.AspNet.Mvc.Core
                 _filters,
                 arguments,
                 Instance);
+
+            if(!ActionContext.ModelState.IsValid)
+            {
+                _logger.LogVerbose("Model state is invalid.");
+            }
 
             await InvokeActionFilterAsync();
         }
