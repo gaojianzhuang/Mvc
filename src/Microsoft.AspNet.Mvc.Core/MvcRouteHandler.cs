@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Linq;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.AspNet.Http;
@@ -72,6 +71,7 @@ namespace Microsoft.AspNet.Mvc
                 using (_logger.BeginScope("ActionId: {ActionId}", actionDescriptor.Id))
                 {
                     _logger.LogVerbose("Executing action {ActionDisplayName}", actionDescriptor.DisplayName);
+                    MvcEventSource.Instance.ActionStarting(actionDescriptor);
 
                     await InvokeActionAsync(context, actionDescriptor);
                     context.IsHandled = true;
@@ -79,6 +79,8 @@ namespace Microsoft.AspNet.Mvc
             }
             finally
             {
+                MvcEventSource.Instance.ActionFinished(actionDescriptor);
+
                 if (!context.IsHandled)
                 {
                     context.RouteData = oldRouteData;

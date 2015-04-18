@@ -92,6 +92,8 @@ namespace MvcSample.Web
 
         public void Configure(IApplicationBuilder app)
         {
+            app.Use(next => new EventListenerMiddleware(next).Invoke);
+
             app.UseStatusCodePages();
             app.UseFileServer();
 
